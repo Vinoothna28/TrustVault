@@ -1,0 +1,21 @@
+{
+  "name": "trustvault",
+  "version": "1.0.0",
+  "description": "TrustVault - Secure document sharing with a real cryptographic audit trail",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "seed": "npm run seed --prefix backend",
+    "test": "npm test --prefix backend",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm run dev --prefix frontend"
+  },
+  "keywords": [
+    "security",
+    "audit-trail",
+    "zero-trust",
+    "document-sharing",
+    "cryptographic-chain"
+  ],
+  "author": "TrustVault Team",
+  "license": "ISC"
+}
