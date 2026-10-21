@@ -6,7 +6,6 @@ import {
   Filter,
   Download,
   Eye,
-  Share2,
   Trash2,
   Edit3,
   FileText,
@@ -362,16 +361,6 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
                     <Download className="w-3.5 h-3.5" />
                     <span>Download</span>
                   </button>
-
-                  {isOwner && (
-                    <button
-                      onClick={() => onOpenPermissions(doc)}
-                      className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded-lg border border-slate-800 transition"
-                      title="Manage User Permissions & Instant Revocation"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                  )}
 
                   {canEdit && (
                     <button

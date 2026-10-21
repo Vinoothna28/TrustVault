@@ -14,6 +14,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
   const [availableUsers, setAvailableUsers] = useState([]);
   const [recipients, setRecipients] = useState({});
   const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
 
   useEffect(() => {
     if (isOpen && accessScope === 'selected' && availableUsers.length === 0) {
@@ -26,6 +27,14 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
   }, [isOpen, accessScope]);
 
   if (!isOpen) return null;
+
+  const normalizedUserSearch = userSearch.trim().toLowerCase();
+  const filteredUsers = availableUsers.filter((u) => {
+    const name = (u.name || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    const department = (u.department || '').toLowerCase();
+    return !normalizedUserSearch || name.includes(normalizedUserSearch) || email.includes(normalizedUserSearch) || department.includes(normalizedUserSearch);
+  });
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
@@ -200,11 +209,20 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
               <p className="text-[11px] text-slate-400">Only your account can view or download this document until you explicitly grant access.</p>
             ) : (
               <div className="space-y-2">
-                <p className="text-[11px] text-slate-400">Select registered users and choose their permission. No other user will receive access.</p>
+                <p className="text-[11px] text-slate-400">Search registered users by name, email, or department, then choose their permission. No other user will receive access.</p>
+                <input
+                  type="search"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Search employees..."
+                  aria-label="Search employees by name, email, or department"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+                />
                 {usersLoading ? <p className="text-xs text-slate-400">Loading users…</p> :
                   availableUsers.length === 0 ? <p className="text-xs text-amber-300">No eligible users found.</p> :
+                  filteredUsers.length === 0 ? <p className="text-xs text-amber-300">No employees match your search.</p> :
                   <div className="max-h-36 overflow-y-auto space-y-2">
-                    {availableUsers.map((u) => (
+                    {filteredUsers.map((u) => (
                       <div key={u._id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 p-2">
                         <label className="flex items-center gap-2 min-w-0">
                           <input

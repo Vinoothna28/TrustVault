@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../api/client';
-import { X, Edit3, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Edit3, AlertCircle, Shield } from 'lucide-react';
 
-export default function EditModal({ isOpen, onClose, document, onEditSuccess }) {
+export default function EditModal({ isOpen, onClose, document, onEditSuccess, onOpenPermissions }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Contracts');
@@ -125,7 +125,15 @@ export default function EditModal({ isOpen, onClose, document, onEditSuccess }) 
             />
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onOpenPermissions?.(document)}
+              className="w-full py-2.5 px-4 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold rounded-lg text-xs sm:text-sm transition flex items-center justify-center gap-2"
+            >
+              <Shield className="w-4 h-4" />
+              Manage Access
+            </button>
             <button
               type="submit"
               disabled={loading}

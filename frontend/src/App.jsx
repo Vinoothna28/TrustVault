@@ -75,6 +75,10 @@ function MainApp() {
         document={selectedDocForEdit}
         onClose={() => setSelectedDocForEdit(null)}
         onEditSuccess={() => setRefreshTrigger((prev) => prev + 1)}
+        onOpenPermissions={(doc) => {
+          setSelectedDocForEdit(null);
+          setSelectedDocForPermissions(doc);
+        }}
       />
 
       {/* Footer */}
