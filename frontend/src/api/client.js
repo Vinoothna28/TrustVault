@@ -75,3 +75,32 @@ export async function downloadFile(documentId, filename) {
   window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
 }
+
+
+/**
+ * Open a protected PDF/image/text document in a new tab.
+ * The browser receives a blob only after the backend validates the current grant.
+ */
+export async function viewFile(documentId) {
+  const tab = window.open('about:blank', '_blank');
+  if (!tab) throw new Error('Allow pop-ups to view this document.');
+
+  try {
+    const token = localStorage.getItem('trustvault_token');
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/download?view=1`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({ message: 'Document viewing failed.' }));
+      throw new Error(data.message || `View failed: HTTP ${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    tab.location.href = url;
+    // Keep the URL alive while the tab is reading it; revoke after a conservative delay.
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+  } catch (error) {
+    tab.close();
+    throw error;
+  }
+}

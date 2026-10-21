@@ -7,7 +7,6 @@ import UploadModal from './components/UploadModal';
 import PermissionsModal from './components/PermissionsModal';
 import EditModal from './components/EditModal';
 import AdminAuditDashboard from './components/AdminAuditDashboard';
-import ThreatsGuide from './components/ThreatsGuide';
 
 function MainApp() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -52,10 +51,6 @@ function MainApp() {
 
         {activeTab === 'audit' && user?.role === 'admin' && (
           <AdminAuditDashboard />
-        )}
-
-        {activeTab === 'threats' && (
-          <ThreatsGuide />
         )}
       </main>
 

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../api/client';
-import { X, UploadCloud, FileText, AlertCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, UploadCloud, FileText, AlertCircle, ShieldCheck, CheckCircle2, Users, Lock } from 'lucide-react';
 
 export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
   const [title, setTitle] = useState('');
@@ -10,6 +10,20 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [accessScope, setAccessScope] = useState('owner');
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [recipients, setRecipients] = useState({});
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && accessScope === 'selected' && availableUsers.length === 0) {
+      setUsersLoading(true);
+      apiRequest('/auth/users')
+        .then((res) => setAvailableUsers((res.users || []).filter((u) => u.role !== 'admin')))
+        .catch((err) => setError(err.message || 'Could not load users for sharing.'))
+        .finally(() => setUsersLoading(false));
+    }
+  }, [isOpen, accessScope]);
 
   if (!isOpen) return null;
 
@@ -47,6 +61,10 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
       formData.append('description', description);
       formData.append('category', category);
       formData.append('tags', tags);
+      const initialGrants = accessScope === 'selected'
+        ? Object.entries(recipients).filter(([, permission]) => permission).map(([userId, permission]) => ({ userId, permission }))
+        : [];
+      formData.append('initialGrants', JSON.stringify(initialGrants));
       formData.append('file', file);
 
       const res = await apiRequest('/documents', {
@@ -163,6 +181,64 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-emerald-400" />
+              <label className="text-xs font-semibold text-slate-200">Access Scope</label>
+            </div>
+            <select
+              value={accessScope}
+              onChange={(e) => setAccessScope(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+            >
+              <option value="owner">Owner only (default)</option>
+              <option value="selected">Selected people only</option>
+            </select>
+            {accessScope === 'owner' ? (
+              <p className="text-[11px] text-slate-400">Only your account can view or download this document until you explicitly grant access.</p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[11px] text-slate-400">Select registered users and choose their permission. No other user will receive access.</p>
+                {usersLoading ? <p className="text-xs text-slate-400">Loading users…</p> :
+                  availableUsers.length === 0 ? <p className="text-xs text-amber-300">No eligible users found.</p> :
+                  <div className="max-h-36 overflow-y-auto space-y-2">
+                    {availableUsers.map((u) => (
+                      <div key={u._id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 p-2">
+                        <label className="flex items-center gap-2 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(recipients[u._id])}
+                            onChange={(e) => setRecipients((prev) => {
+                              const next = { ...prev };
+                              if (e.target.checked) next[u._id] = 'read';
+                              else delete next[u._id];
+                              return next;
+                            })}
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-xs text-white truncate">{u.name}</span>
+                            <span className="block text-[10px] text-slate-400 truncate">{u.email}</span>
+                          </span>
+                        </label>
+                        {recipients[u._id] && (
+                          <select
+                            aria-label={`Permission for ${u.email}`}
+                            value={recipients[u._id]}
+                            onChange={(e) => setRecipients((prev) => ({ ...prev, [u._id]: e.target.value }))}
+                            className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] text-white"
+                          >
+                            <option value="read">Read</option>
+                            <option value="edit">Edit</option>
+                          </select>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                }
+              </div>
+            )}
           </div>
 
           <div>

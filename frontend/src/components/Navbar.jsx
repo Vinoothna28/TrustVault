@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, FileText, Activity, ShieldAlert, LogOut, CheckCircle2, User } from 'lucide-react';
+import { Shield, FileText, Activity, LogOut } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, onOpenUpload }) {
   const { user, logout } = useAuth();
@@ -77,18 +77,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenUpload }) {
               </button>
             )}
 
-            <button
-              onClick={() => setActiveTab('threats')}
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 transition ${
-                activeTab === 'threats'
-                  ? 'bg-slate-800 text-emerald-400 border border-slate-700 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <ShieldAlert className="w-4 h-4" />
-              <span className="hidden sm:inline">Threat Model</span>
-              <span className="sm:hidden">Threats</span>
-            </button>
+
           </nav>
 
           {/* User Profile & Actions */}

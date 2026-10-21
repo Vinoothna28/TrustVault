@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest, downloadFile } from '../api/client';
+import { apiRequest, downloadFile, viewFile } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import {
   Search,
   Filter,
   Download,
+  Eye,
   Share2,
   Trash2,
   Edit3,
@@ -59,6 +60,18 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchDocuments();
+  };
+
+  const handleView = async (doc) => {
+    try {
+      setActionMessage({ type: 'info', text: `Checking access to '${doc.originalFilename}'...` });
+      await viewFile(doc._id);
+      setActionMessage({ type: 'success', text: 'Document opened after server-side permission verification.' });
+      setTimeout(() => setActionMessage(null), 4000);
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Unable to view document.' });
+      setTimeout(() => setActionMessage(null), 5000);
+    }
   };
 
   const handleDownload = async (doc) => {
@@ -333,6 +346,14 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
 
                 {/* Actions Footer */}
                 <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => handleView(doc)}
+                    className="flex-1 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                    title="View supported file types after server-side permission verification"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View</span>
+                  </button>
                   <button
                     onClick={() => handleDownload(doc)}
                     className="flex-1 py-1.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition"

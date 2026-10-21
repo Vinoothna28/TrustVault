@@ -1,41 +1,35 @@
-# Dependencies
-node_modules/
-backend/node_modules/
-frontend/node_modules/
-
-# Environment variables & secrets (CRITICAL: NEVER COMMIT)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-backend/.env
-frontend/.env
-
-# Uploaded confidential document storage (Never commit customer documents)
-backend/storage/
-backend/uploads/
-uploads/
-storage/
-
-# Build outputs
-frontend/dist/
-frontend/build/
-
-# Testing & Coverage
-coverage/
-.nyc_output/
-
 # Logs
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# OS Files
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Private uploaded documents
+backend/storage/
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-
-# IDE / Editor
-.vscode/
-.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

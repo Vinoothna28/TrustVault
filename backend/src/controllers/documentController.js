@@ -31,6 +31,46 @@ const uploadDocument = async (req, res) => {
       ? (typeof tags === 'string' ? tags.split(',') : tags).map((t) => t.trim()).filter(Boolean)
       : [];
 
+    // Optional named-user grants selected in the upload form. The owner identity
+    // always comes from the authenticated server-side session.
+    let initialGrants = [];
+    if (req.body.initialGrants) {
+      let requestedGrants;
+      try {
+        requestedGrants = JSON.parse(req.body.initialGrants);
+      } catch {
+        return res.status(400).json({ success: false, message: 'Invalid initial access scope.' });
+      }
+      if (!Array.isArray(requestedGrants)) {
+        return res.status(400).json({ success: false, message: 'Initial grants must be a list.' });
+      }
+      const ids = [...new Set(requestedGrants.map((g) => String(g.userId || '')))];
+      if (ids.some((id) => !/^[0-9a-fA-F]{24}$/.test(id))) {
+        return res.status(400).json({ success: false, message: 'Invalid recipient user ID.' });
+      }
+      const activeUsers = await User.find({ _id: { $in: ids }, isActive: true }).select('_id role');
+      if (activeUsers.length !== ids.length) {
+        return res.status(400).json({ success: false, message: 'One or more recipients are unavailable.' });
+      }
+      if (requestedGrants.some((grant) =>
+        !['read', 'edit'].includes(grant.permission) ||
+        String(grant.userId) === String(req.user._id)
+      )) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each recipient must be another user with read or edit permission.'
+        });
+      }
+      initialGrants = requestedGrants.map((grant) => {
+        return {
+          user: grant.userId,
+          permission: grant.permission,
+          grantedBy: req.user._id,
+          grantedAt: new Date()
+        };
+      });
+    }
+
     const newDoc = new Document({
       title: title.trim(),
       description: description ? description.trim() : '',
@@ -42,10 +82,32 @@ const uploadDocument = async (req, res) => {
       sizeBytes: fileInfo.sizeBytes,
       checksumSha256: fileInfo.checksumSha256,
       tags: parsedTags,
-      permissions: []
+      permissions: initialGrants
     });
 
     await newDoc.save();
+
+    for (const grant of initialGrants) {
+      const recipient = await User.findById(grant.user).select('email');
+      await logAuditEvent({
+        action: 'PERMISSION_GRANTED',
+        outcome: 'SUCCESS',
+        actor: {
+          userId: req.user._id,
+          email: req.user.email,
+          role: req.user.role,
+          ipAddress: req.ip || req.connection.remoteAddress,
+          userAgent: req.get('User-Agent')
+        },
+        document: { documentId: newDoc._id, title: newDoc.title, category: newDoc.category },
+        targetUser: {
+          userId: grant.user,
+          email: recipient ? recipient.email : 'unknown',
+          grantedPermission: grant.permission
+        },
+        details: `Initial upload grant: '${grant.permission}' access`
+      });
+    }
 
     await logAuditEvent({
       action: 'DOCUMENT_UPLOAD',
@@ -263,9 +325,12 @@ const downloadDocument = async (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+    const disposition = req.query.view === '1' && /^(application\/pdf|image\/|text\/)/i.test(document.mimeType || '')
+      ? 'inline'
+      : 'attachment';
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(document.originalFilename)}"`
+      `${disposition}; filename="${encodeURIComponent(document.originalFilename)}"`
     );
 
     // Stream file securely to client
