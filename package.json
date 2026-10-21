@@ -1,45 +1,21 @@
 {
-  "name": "trustvault-backend",
+  "name": "trustvault",
   "version": "1.0.0",
-  "description": "TrustVault - Secure Document Sharing with Cryptographic Audit Trail",
-  "main": "src/server.js",
+  "description": "TrustVault - Secure document sharing with a real cryptographic audit trail",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "seed": "node src/scripts/seed.js",
-    "test:db": "node src/scripts/testConnection.js",
-    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --forceExit"
-  },
-  "jest": {
-    "testTimeout": 30000,
-    "verbose": true
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "seed": "npm run seed --prefix backend",
+    "test": "npm test --prefix backend",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm run dev --prefix frontend"
   },
   "keywords": [
     "security",
-    "document-sharing",
     "audit-trail",
     "zero-trust",
-    "rbac"
+    "document-sharing",
+    "cryptographic-chain"
   ],
   "author": "TrustVault Team",
-  "license": "ISC",
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^18.0.8",
-    "express": "^5.3.0",
-    "express-rate-limit": "^8.7.1",
-    "helmet": "^8.3.0",
-    "jsonwebtoken": "^9.0.3",
-    "mongodb": "^6.13.0",
-    "mongoose": "^8.10.1",
-    "multer": "^2.4.0",
-    "uuid": "^14.0.3"
-  },
-  "devDependencies": {
-    "cross-env": "^10.1.0",
-    "jest": "^30.5.2",
-    "nodemon": "^3.1.14",
-    "supertest": "^7.3.1"
-  }
+  "license": "ISC"
 }

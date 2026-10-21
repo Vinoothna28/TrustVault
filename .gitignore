@@ -7,7 +7,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment secrets
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
@@ -15,13 +20,15 @@ lerna-debug.log*
 # Dependencies
 node_modules/
 
-# Private uploaded documents
+# Build output
+dist/
+build/
+
+# Backend local storage
 backend/storage/
 
-node_modules
-dist
-dist-ssr
-*.local
+# Logs
+*.log
 
 # Editor directories and files
 .vscode/*

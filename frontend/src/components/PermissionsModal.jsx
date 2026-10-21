@@ -7,6 +7,8 @@ export default function PermissionsModal({ isOpen, onClose, document, onPermissi
   const [users, setUsers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedPermission, setSelectedPermission] = useState('read');
+  const [userSearch, setUserSearch] = useState('');
+  const [updatingUserId, setUpdatingUserId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -40,6 +42,14 @@ export default function PermissionsModal({ isOpen, onClose, document, onPermissi
 
   if (!isOpen || !document) return null;
 
+  const normalizedSearch = userSearch.trim().toLowerCase();
+  const filteredUsers = users.filter((u) => {
+    const name = (u.name || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    const department = (u.department || '').toLowerCase();
+    return !normalizedSearch || name.includes(normalizedSearch) || email.includes(normalizedSearch) || department.includes(normalizedSearch);
+  });
+
   const handleGrant = async (e) => {
     e.preventDefault();
     if (!selectedUserId) return;
@@ -66,6 +76,30 @@ export default function PermissionsModal({ isOpen, onClose, document, onPermissi
       setError(err.message || 'Failed to grant permission');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePermissionChange = async (targetUserId, targetName, permission) => {
+    const current = permissions.find((p) => String(p.user?._id || p.user) === String(targetUserId));
+    if (!current || current.permission === permission) return;
+
+    setUpdatingUserId(String(targetUserId));
+    setError('');
+    setSuccess('');
+    try {
+      const res = await apiRequest(`/documents/${document._id}/permissions`, {
+        method: 'POST',
+        body: { targetUserId, permission }
+      });
+      if (res.success) {
+        setPermissions(res.permissions || []);
+        setSuccess(`${targetName}'s permission changed to ${permission.toUpperCase()}.`);
+        onPermissionsUpdated();
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to update permission');
+    } finally {
+      setUpdatingUserId('');
     }
   };
 
@@ -149,15 +183,34 @@ export default function PermissionsModal({ isOpen, onClose, document, onPermissi
               <span>Grant New User Access</span>
             </div>
 
+            <div>
+              <label htmlFor="employee-search" className="block text-[11px] text-slate-400 mb-1">Search employees by name, email, or department</label>
+              <input
+                id="employee-search"
+                type="search"
+                value={userSearch}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setUserSearch(value);
+                  const q = value.trim().toLowerCase();
+                  const matches = users.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.department || '').toLowerCase().includes(q));
+                  setSelectedUserId(matches[0]?._id || '');
+                }}
+                placeholder="Search employee..."
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Select Named User</label>
+                <label className="block text-[11px] text-slate-400 mb-1">Select Named User ({filteredUsers.length})</label>
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
-                  {users.map((u) => (
+                  {filteredUsers.length === 0 && <option value="">No employees found</option>}
+                  {filteredUsers.map((u) => (
                     <option key={u._id} value={u._id}>
                       {u.name} ({u.email})
                     </option>
@@ -242,14 +295,29 @@ export default function PermissionsModal({ isOpen, onClose, document, onPermissi
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleRevoke(userId, userName)}
-                        disabled={loading}
-                        className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg border border-transparent hover:border-rose-900/60 transition"
-                        title="Revoke access immediately"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2 ml-3">
+                        <label className="sr-only" htmlFor={`permission-${userId}`}>Permission for {userName}</label>
+                        <select
+                          id={`permission-${userId}`}
+                          value={p.permission}
+                          onChange={(e) => handlePermissionChange(userId, userName, e.target.value)}
+                          disabled={loading || updatingUserId === String(userId)}
+                          className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-[11px] text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                          title="Change this user's permission"
+                        >
+                          <option value="read">Read</option>
+                          <option value="edit">Edit</option>
+                        </select>
+                        <button
+                          onClick={() => handleRevoke(userId, userName)}
+                          disabled={loading || updatingUserId === String(userId)}
+                          className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg border border-transparent hover:border-rose-900/60 transition disabled:opacity-50"
+                          title={`Revoke access for ${userName}`}
+                          aria-label={`Revoke access for ${userName}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
