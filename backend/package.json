@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "seed": "node src/scripts/seed.js",
     "test:db": "node src/scripts/testConnection.js",
-    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --forceExit"
+    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --forceExit",
+    "cleanup:demo-documents": "node src/scripts/cleanupDemoDocuments.js"
   },
   "jest": {
     "testTimeout": 30000,

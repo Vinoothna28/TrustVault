@@ -150,7 +150,7 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1440px] space-y-7 px-1 sm:px-2">
       {/* Alert toast notification */}
       {actionMessage && (
         <div
@@ -175,15 +175,15 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
       )}
 
       {/* Page Title & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-5 border-b border-slate-800/80 pb-6 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h2 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-slate-50 sm:text-3xl">
             Secure Documents
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+            <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-300">
               {documents.length} visible
             </span>
           </h2>
-          <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             Strict per-document access grants. Downloads re-validate server permissions in real time.
           </p>
         </div>
@@ -191,35 +191,35 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
         {(user?.role === 'owner' || user?.role === 'admin') && (
           <button
             onClick={onOpenUpload}
-            className="self-start md:self-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs sm:text-sm rounded-lg transition shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+            className="self-start rounded-xl border border-emerald-400/30 bg-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-slate-950 md:self-auto"
           >
-            <span>+ Upload Confidential Document</span>
+            <span>+ Upload document</span>
           </button>
         )}
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 backdrop-blur space-y-3">
+      <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-sm shadow-black/10 backdrop-blur sm:p-5">
         <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
             <input
               type="text"
               placeholder="Search by title, description, or keyword..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full rounded-xl border border-slate-700/90 bg-slate-950/80 py-3 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/10"
             />
           </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg text-xs sm:text-sm font-medium transition"
+            className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500"
           >
             Search
           </button>
         </form>
 
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800/60 text-xs">
+        <div className="flex flex-wrap items-center gap-3 border-t border-slate-800/80 pt-4 text-xs">
           <div className="flex items-center gap-1.5 text-slate-400">
             <Filter className="w-3.5 h-3.5" />
             <span>Category:</span>
@@ -228,7 +228,7 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-md px-2.5 py-1 text-slate-200 focus:outline-none focus:border-emerald-500 text-xs"
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 focus:border-emerald-400 focus:outline-none"
           >
             <option value="ALL">All Categories</option>
             <option value="Contracts">Contracts</option>
@@ -247,14 +247,14 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-xs focus:outline-none"
+              className="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-slate-300 focus:border-emerald-400 focus:outline-none"
             />
             <span className="text-slate-600">to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-xs focus:outline-none"
+              className="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-slate-300 focus:border-emerald-400 focus:outline-none"
             />
             {(startDate || endDate) && (
               <button
@@ -286,7 +286,7 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {documents.map((doc) => {
             const isOwner = doc.owner?._id === user?._id || doc.myPermission === 'owner';
             const canEdit = isOwner || doc.myPermission === 'edit';
@@ -294,7 +294,7 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
             return (
               <div
                 key={doc._id}
-                className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-xl p-5 shadow-lg transition flex flex-col justify-between group"
+                className="group flex min-h-[300px] flex-col justify-between rounded-2xl border border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 p-5 shadow-sm shadow-black/20 transition duration-200 hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-xl hover:shadow-black/20"
               >
                 <div>
                   {/* Category and Permission Header */}
@@ -306,15 +306,15 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
                   </div>
 
                   {/* Title & Description */}
-                  <h4 className="text-base font-semibold text-white group-hover:text-emerald-400 transition line-clamp-1">
+                  <h4 className="mt-4 line-clamp-2 text-lg font-semibold leading-6 text-slate-50 transition group-hover:text-emerald-300">
                     {doc.title}
                   </h4>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2 min-h-[32px]">
+                  <p className="mt-2 line-clamp-2 min-h-[40px] text-sm leading-5 text-slate-400">
                     {doc.description || 'No description provided.'}
                   </p>
 
                   {/* Metadata Chips */}
-                  <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-1.5 text-[11px] text-slate-400">
+                  <div className="mt-5 space-y-3 border-t border-slate-800/80 pt-4 text-xs text-slate-400">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5 text-slate-500" />
@@ -344,10 +344,10 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
                 </div>
 
                 {/* Actions Footer */}
-                <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-800/80 pt-4">
                   <button
                     onClick={() => handleView(doc)}
-                    className="flex-1 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-3 py-2.5 text-xs font-semibold text-slate-100 transition hover:border-slate-600 hover:bg-slate-700"
                     title="View supported file types after server-side permission verification"
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -355,7 +355,7 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
                   </button>
                   <button
                     onClick={() => handleDownload(doc)}
-                    className="flex-1 py-1.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5 text-xs font-semibold text-emerald-300 transition hover:border-emerald-400/40 hover:bg-emerald-500/15"
                     title="Download file with real-time server verification"
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -365,7 +365,7 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
                   {canEdit && (
                     <button
                       onClick={() => onOpenEdit(doc)}
-                      className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg border border-slate-800 transition"
+                      className="rounded-xl border border-slate-800 p-2.5 text-slate-400 transition hover:border-sky-500/30 hover:bg-sky-500/10 hover:text-sky-300"
                       title="Edit metadata"
                     >
                       <Edit3 className="w-4 h-4" />
@@ -375,7 +375,7 @@ export default function DocumentList({ onOpenUpload, onOpenPermissions, onOpenEd
                   {isOwner && (
                     <button
                       onClick={() => handleDelete(doc)}
-                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg border border-slate-800 transition"
+                      className="rounded-xl border border-slate-800 p-2.5 text-slate-400 transition hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
                       title="Delete document"
                     >
                       <Trash2 className="w-4 h-4" />

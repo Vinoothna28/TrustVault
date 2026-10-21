@@ -12,23 +12,13 @@ dist
 dist-ssr
 *.local
 
-# Environment variables and secrets
+# Environment secrets
 .env
 .env.*
 !.env.example
 
-# Dependencies
-node_modules/
-
-# Build output
-dist/
-build/
-
-# Backend local storage
+# Local backend uploads
 backend/storage/
-
-# Logs
-*.log
 
 # Editor directories and files
 .vscode/*
