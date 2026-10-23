@@ -45,21 +45,6 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
-    },
-
-    isEmailVerified: {
-      type: Boolean,
-      default: false
-    },
-
-    emailVerificationTokenHash: {
-      type: String,
-      select: false
-    },
-
-    emailVerificationExpires: {
-      type: Date,
-      select: false
     }
   },
   { timestamps: true }
@@ -78,12 +63,8 @@ userSchema.methods.comparePassword = function (candidatePassword) {
 
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
-
   delete user.password;
-  delete user.emailVerificationTokenHash;
-  delete user.emailVerificationExpires;
   delete user.__v;
-
   return user;
 };
 

@@ -5,8 +5,6 @@ const rateLimit = require('express-rate-limit');
 const {
   register,
   login,
-  verifyEmail,
-  resendVerification,
   getMe,
   listUsers
 } = require('../controllers/authController');
@@ -37,21 +35,8 @@ const registrationLimiter = rateLimit({
   }
 });
 
-const verificationLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Too many verification attempts. Please try again later.'
-  }
-});
-
 router.post('/register', registrationLimiter, register);
 router.post('/login', loginLimiter, login);
-router.get('/verify-email', verificationLimiter, verifyEmail);
-router.post('/resend-verification', verificationLimiter, resendVerification);
 router.get('/me', authenticateToken, getMe);
 router.get('/users', authenticateToken, listUsers);
 
