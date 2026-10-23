@@ -7,14 +7,11 @@ const { sendVerificationEmail } = require('../utils/email');
 const COMPANY_DOMAIN = 'snovasys.com';
 const TOKEN_EXPIRY_MS = 30 * 60 * 1000;
 
-// Local testing only. This flag must not be enabled in production.
 const ALLOW_NON_COMPANY_EMAILS =
   process.env.ALLOW_NON_COMPANY_EMAILS === 'true';
 
 function normalizeEmail(email) {
-  return typeof email === 'string'
-    ? email.trim().toLowerCase()
-    : '';
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
 function isValidEmail(email) {
@@ -29,20 +26,13 @@ function isCompanyEmail(email) {
 }
 
 function isAllowedEmail(email) {
-  if (!isValidEmail(email)) {
-    return false;
-  }
-
-  return ALLOW_NON_COMPANY_EMAILS || isCompanyEmail(email);
+  return isValidEmail(email) &&
+    (ALLOW_NON_COMPANY_EMAILS || isCompanyEmail(email));
 }
 
 function createVerificationToken() {
   const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
-
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   return { token, tokenHash };
 }
 
@@ -70,20 +60,29 @@ function publicUser(user) {
   };
 }
 
+// Log useful SMTP diagnostics without exposing credentials.
+function logEmailError(context, error) {
+  console.error(`[Auth] ${context}`, {
+    message: error?.message || 'Unknown email error',
+    code: error?.code || null,
+    command: error?.command || null,
+    responseCode: error?.responseCode || null,
+    response: error?.response || null
+  });
+}
+
 exports.register = async (req, res) => {
   try {
-    const name =
-      typeof req.body.name === 'string'
-        ? req.body.name.trim()
-        : '';
+    const name = typeof req.body.name === 'string'
+      ? req.body.name.trim()
+      : '';
 
     const email = normalizeEmail(req.body.email);
     const password = req.body.password;
 
-    const department =
-      typeof req.body.department === 'string'
-        ? req.body.department.trim()
-        : 'General';
+    const department = typeof req.body.department === 'string'
+      ? req.body.department.trim()
+      : 'General';
 
     if (!name || !email || typeof password !== 'string') {
       return res.status(400).json({
@@ -127,7 +126,6 @@ exports.register = async (req, res) => {
 
     const { token, tokenHash } = createVerificationToken();
 
-    // Public registration always creates a viewer.
     const user = new User({
       name,
       email,
@@ -137,9 +135,7 @@ exports.register = async (req, res) => {
       isActive: true,
       isEmailVerified: false,
       emailVerificationTokenHash: tokenHash,
-      emailVerificationExpires: new Date(
-        Date.now() + TOKEN_EXPIRY_MS
-      )
+      emailVerificationExpires: new Date(Date.now() + TOKEN_EXPIRY_MS)
     });
 
     await user.save();
@@ -147,10 +143,7 @@ exports.register = async (req, res) => {
     try {
       await sendVerificationEmail(email, token);
     } catch (emailError) {
-      console.error(
-        '[Auth] Verification email could not be sent:',
-        emailError.message
-      );
+      logEmailError('Verification email failed:', emailError);
 
       return res.status(503).json({
         success: false,
@@ -197,19 +190,14 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
     const user = await User.findOne({
       email,
       isEmailVerified: false,
       emailVerificationTokenHash: tokenHash,
       emailVerificationExpires: { $gt: new Date() }
-    }).select(
-      '+emailVerificationTokenHash +emailVerificationExpires'
-    );
+    }).select('+emailVerificationTokenHash +emailVerificationExpires');
 
     if (!user) {
       return res.status(400).json({
@@ -222,7 +210,6 @@ exports.verifyEmail = async (req, res) => {
     user.isEmailVerified = true;
     user.emailVerificationTokenHash = undefined;
     user.emailVerificationExpires = undefined;
-
     await user.save();
 
     return res.status(200).json({
@@ -230,10 +217,7 @@ exports.verifyEmail = async (req, res) => {
       message: 'Email verified successfully. You can now sign in.'
     });
   } catch (error) {
-    console.error(
-      '[Auth] Email verification failed:',
-      error.message
-    );
+    console.error('[Auth] Email verification failed:', error.message);
 
     return res.status(500).json({
       success: false,
@@ -272,19 +256,13 @@ exports.resendVerification = async (req, res) => {
     const { token, tokenHash } = createVerificationToken();
 
     user.emailVerificationTokenHash = tokenHash;
-    user.emailVerificationExpires = new Date(
-      Date.now() + TOKEN_EXPIRY_MS
-    );
-
+    user.emailVerificationExpires = new Date(Date.now() + TOKEN_EXPIRY_MS);
     await user.save();
 
     try {
       await sendVerificationEmail(email, token);
     } catch (emailError) {
-      console.error(
-        '[Auth] Resend email failed:',
-        emailError.message
-      );
+      logEmailError('Resend verification email failed:', emailError);
 
       return res.status(503).json({
         success: false,
@@ -295,10 +273,7 @@ exports.resendVerification = async (req, res) => {
 
     return res.status(200).json(genericResponse);
   } catch (error) {
-    console.error(
-      '[Auth] Resend verification failed:',
-      error.message
-    );
+    console.error('[Auth] Resend verification failed:', error.message);
 
     return res.status(500).json({
       success: false,
@@ -338,8 +313,7 @@ exports.login = async (req, res) => {
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message:
-          'This account is disabled. Contact your administrator.'
+        message: 'This account is disabled. Contact your administrator.'
       });
     }
 
@@ -371,8 +345,7 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const userId =
-      req.user?.id || req.user?.userId || req.user?._id;
+    const userId = req.user?.id || req.user?.userId || req.user?._id;
 
     if (!userId) {
       return res.status(401).json({
@@ -395,10 +368,7 @@ exports.getMe = async (req, res) => {
       user: publicUser(user)
     });
   } catch (error) {
-    console.error(
-      '[Auth] Current-user lookup failed:',
-      error.message
-    );
+    console.error('[Auth] Current-user lookup failed:', error.message);
 
     return res.status(500).json({
       success: false,
@@ -409,12 +379,8 @@ exports.getMe = async (req, res) => {
 
 exports.listUsers = async (req, res) => {
   try {
-    const userId =
-      req.user?.id || req.user?.userId || req.user?._id;
-
-    const requester = userId
-      ? await User.findById(userId)
-      : null;
+    const userId = req.user?.id || req.user?.userId || req.user?._id;
+    const requester = userId ? await User.findById(userId) : null;
 
     if (
       !requester ||
@@ -429,9 +395,7 @@ exports.listUsers = async (req, res) => {
     }
 
     const users = await User.find({})
-      .select(
-        'name email department role isActive isEmailVerified createdAt'
-      )
+      .select('name email department role isActive isEmailVerified createdAt')
       .sort({ name: 1 });
 
     return res.status(200).json({
