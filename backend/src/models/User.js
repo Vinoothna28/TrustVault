@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Name cannot exceed 100 characters']
     },
+
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -17,38 +18,45 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       match: [
-        /^[^\s@]+@snovasys\.com$/i,
-        'Use your authorized Snovasys company email'
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        'Please enter a valid email address'
       ]
     },
+
     password: {
       type: String,
       required: [true, 'Password is required'],
       minlength: [8, 'Password must be at least 8 characters long'],
       select: false
     },
+
     role: {
       type: String,
       enum: ['admin', 'owner', 'viewer'],
       default: 'viewer'
     },
+
     department: {
       type: String,
       trim: true,
       default: 'General'
     },
+
     isActive: {
       type: Boolean,
       default: true
     },
+
     isEmailVerified: {
       type: Boolean,
       default: false
     },
+
     emailVerificationTokenHash: {
       type: String,
       select: false
     },
+
     emailVerificationExpires: {
       type: Date,
       select: false
@@ -70,10 +78,12 @@ userSchema.methods.comparePassword = function (candidatePassword) {
 
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
+
   delete user.password;
   delete user.emailVerificationTokenHash;
   delete user.emailVerificationExpires;
   delete user.__v;
+
   return user;
 };
 

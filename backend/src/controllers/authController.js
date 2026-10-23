@@ -7,8 +7,19 @@ const { sendVerificationEmail } = require('../utils/email');
 const COMPANY_DOMAIN = 'snovasys.com';
 const TOKEN_EXPIRY_MS = 30 * 60 * 1000;
 
+// Local testing only. This flag must not be enabled in production.
+const ALLOW_NON_COMPANY_EMAILS =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.ALLOW_NON_COMPANY_EMAILS === 'true';
+
 function normalizeEmail(email) {
-  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+  return typeof email === 'string'
+    ? email.trim().toLowerCase()
+    : '';
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function isCompanyEmail(email) {
@@ -18,9 +29,20 @@ function isCompanyEmail(email) {
     parts[1] === COMPANY_DOMAIN;
 }
 
+function isAllowedEmail(email) {
+  if (!isValidEmail(email)) {
+    return false;
+  }
+
+  return ALLOW_NON_COMPANY_EMAILS || isCompanyEmail(email);
+}
+
 function createVerificationToken() {
   const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const tokenHash = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
 
   return { token, tokenHash };
 }
@@ -51,9 +73,14 @@ function publicUser(user) {
 
 exports.register = async (req, res) => {
   try {
-    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const name =
+      typeof req.body.name === 'string'
+        ? req.body.name.trim()
+        : '';
+
     const email = normalizeEmail(req.body.email);
     const password = req.body.password;
+
     const department =
       typeof req.body.department === 'string'
         ? req.body.department.trim()
@@ -62,14 +89,16 @@ exports.register = async (req, res) => {
     if (!name || !email || typeof password !== 'string') {
       return res.status(400).json({
         success: false,
-        message: 'Name, company email, and password are required.'
+        message: 'Name, email, and password are required.'
       });
     }
 
-    if (!isCompanyEmail(email)) {
+    if (!isAllowedEmail(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Registration is restricted to @snovasys.com email addresses.'
+        message: ALLOW_NON_COMPANY_EMAILS
+          ? 'Enter a valid email address.'
+          : 'Registration is restricted to @snovasys.com email addresses.'
       });
     }
 
@@ -92,14 +121,14 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'An account with this email already exists. Try signing in or requesting verification again.'
+        message:
+          'An account with this email already exists. Try signing in or requesting verification again.'
       });
     }
 
     const { token, tokenHash } = createVerificationToken();
 
     // Public registration always creates a viewer.
-    // Never accept an admin/owner role from req.body.
     const user = new User({
       name,
       email,
@@ -109,7 +138,9 @@ exports.register = async (req, res) => {
       isActive: true,
       isEmailVerified: false,
       emailVerificationTokenHash: tokenHash,
-      emailVerificationExpires: new Date(Date.now() + TOKEN_EXPIRY_MS)
+      emailVerificationExpires: new Date(
+        Date.now() + TOKEN_EXPIRY_MS
+      )
     });
 
     await user.save();
@@ -117,19 +148,22 @@ exports.register = async (req, res) => {
     try {
       await sendVerificationEmail(email, token);
     } catch (emailError) {
-      // Keep the account unverified. The user can request a new email.
-      console.error('[Auth] Verification email could not be sent:', emailError.message);
+      console.error(
+        '[Auth] Verification email could not be sent:',
+        emailError.message
+      );
 
       return res.status(503).json({
         success: false,
-        message: 'Your account was created but the verification email could not be sent. Please request a new verification email later.'
+        message:
+          'Your account was created but the verification email could not be sent. Please request a new verification email later.'
       });
     }
 
     return res.status(201).json({
       success: true,
-      message: 'Account created. Check your Snovasys email for the verification link.',
-      email: email
+      message: 'Account created. Check your email for the verification link.',
+      email
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -140,6 +174,7 @@ exports.register = async (req, res) => {
     }
 
     console.error('[Auth] Registration failed:', error.message);
+
     return res.status(500).json({
       success: false,
       message: 'Registration failed.'
@@ -152,28 +187,36 @@ exports.verifyEmail = async (req, res) => {
     const email = normalizeEmail(req.query.email);
     const token = req.query.token;
 
-    if (!isCompanyEmail(email) ||
-        typeof token !== 'string' ||
-        !/^[a-f0-9]{64}$/i.test(token)) {
+    if (
+      !isAllowedEmail(email) ||
+      typeof token !== 'string' ||
+      !/^[a-f0-9]{64}$/i.test(token)
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Invalid or incomplete verification link.'
       });
     }
 
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
 
     const user = await User.findOne({
       email,
       isEmailVerified: false,
       emailVerificationTokenHash: tokenHash,
       emailVerificationExpires: { $gt: new Date() }
-    }).select('+emailVerificationTokenHash +emailVerificationExpires');
+    }).select(
+      '+emailVerificationTokenHash +emailVerificationExpires'
+    );
 
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'This verification link is invalid, expired, or already used. Request a new link.'
+        message:
+          'This verification link is invalid, expired, or already used. Request a new link.'
       });
     }
 
@@ -188,7 +231,11 @@ exports.verifyEmail = async (req, res) => {
       message: 'Email verified successfully. You can now sign in.'
     });
   } catch (error) {
-    console.error('[Auth] Email verification failed:', error.message);
+    console.error(
+      '[Auth] Email verification failed:',
+      error.message
+    );
+
     return res.status(500).json({
       success: false,
       message: 'Email verification failed.'
@@ -200,20 +247,23 @@ exports.resendVerification = async (req, res) => {
   try {
     const email = normalizeEmail(req.body.email);
 
-    if (!isCompanyEmail(email)) {
+    if (!isAllowedEmail(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Enter your registered Snovasys company email.'
+        message: ALLOW_NON_COMPANY_EMAILS
+          ? 'Enter a valid email address.'
+          : 'Enter your registered Snovasys company email.'
       });
     }
 
-    const user = await User.findOne({ email })
-      .select('+emailVerificationTokenHash +emailVerificationExpires');
+    const user = await User.findOne({ email }).select(
+      '+emailVerificationTokenHash +emailVerificationExpires'
+    );
 
-    // Use a generic response so the endpoint does not reveal account existence.
     const genericResponse = {
       success: true,
-      message: 'If an unverified account exists, a verification email will be sent.'
+      message:
+        'If an unverified account exists, a verification email will be sent.'
     };
 
     if (!user || user.isEmailVerified || !user.isActive) {
@@ -223,22 +273,34 @@ exports.resendVerification = async (req, res) => {
     const { token, tokenHash } = createVerificationToken();
 
     user.emailVerificationTokenHash = tokenHash;
-    user.emailVerificationExpires = new Date(Date.now() + TOKEN_EXPIRY_MS);
+    user.emailVerificationExpires = new Date(
+      Date.now() + TOKEN_EXPIRY_MS
+    );
+
     await user.save();
 
     try {
       await sendVerificationEmail(email, token);
     } catch (emailError) {
-      console.error('[Auth] Resend email failed:', emailError.message);
+      console.error(
+        '[Auth] Resend email failed:',
+        emailError.message
+      );
+
       return res.status(503).json({
         success: false,
-        message: 'Unable to send the verification email right now. Please try again later.'
+        message:
+          'Unable to send the verification email right now. Please try again later.'
       });
     }
 
     return res.status(200).json(genericResponse);
   } catch (error) {
-    console.error('[Auth] Resend verification failed:', error.message);
+    console.error(
+      '[Auth] Resend verification failed:',
+      error.message
+    );
+
     return res.status(500).json({
       success: false,
       message: 'Unable to process the request.'
@@ -258,7 +320,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    if (!isCompanyEmail(email)) {
+    if (!isAllowedEmail(email)) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.'
@@ -277,7 +339,8 @@ exports.login = async (req, res) => {
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'This account is disabled. Contact your administrator.'
+        message:
+          'This account is disabled. Contact your administrator.'
       });
     }
 
@@ -285,7 +348,7 @@ exports.login = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'EMAIL_NOT_VERIFIED',
-        message: 'Verify your Snovasys email before signing in.'
+        message: 'Verify your email before signing in.'
       });
     }
 
@@ -299,6 +362,7 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error('[Auth] Login failed:', error.message);
+
     return res.status(500).json({
       success: false,
       message: 'Login failed.'
@@ -308,7 +372,8 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const userId = req.user?.id || req.user?.userId || req.user?._id;
+    const userId =
+      req.user?.id || req.user?.userId || req.user?._id;
 
     if (!userId) {
       return res.status(401).json({
@@ -331,7 +396,11 @@ exports.getMe = async (req, res) => {
       user: publicUser(user)
     });
   } catch (error) {
-    console.error('[Auth] Current-user lookup failed:', error.message);
+    console.error(
+      '[Auth] Current-user lookup failed:',
+      error.message
+    );
+
     return res.status(500).json({
       success: false,
       message: 'Unable to retrieve account details.'
@@ -341,11 +410,19 @@ exports.getMe = async (req, res) => {
 
 exports.listUsers = async (req, res) => {
   try {
-    const userId = req.user?.id || req.user?.userId || req.user?._id;
-    const requester = userId ? await User.findById(userId) : null;
+    const userId =
+      req.user?.id || req.user?.userId || req.user?._id;
 
-    if (!requester || !requester.isActive ||
-        !requester.isEmailVerified || requester.role !== 'admin') {
+    const requester = userId
+      ? await User.findById(userId)
+      : null;
+
+    if (
+      !requester ||
+      !requester.isActive ||
+      !requester.isEmailVerified ||
+      requester.role !== 'admin'
+    ) {
       return res.status(403).json({
         success: false,
         message: 'Administrator access is required.'
@@ -353,7 +430,9 @@ exports.listUsers = async (req, res) => {
     }
 
     const users = await User.find({})
-      .select('name email department role isActive isEmailVerified createdAt')
+      .select(
+        'name email department role isActive isEmailVerified createdAt'
+      )
       .sort({ name: 1 });
 
     return res.status(200).json({
@@ -362,6 +441,7 @@ exports.listUsers = async (req, res) => {
     });
   } catch (error) {
     console.error('[Auth] User listing failed:', error.message);
+
     return res.status(500).json({
       success: false,
       message: 'Unable to retrieve users.'
