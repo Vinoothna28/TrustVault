@@ -9,7 +9,6 @@ const TOKEN_EXPIRY_MS = 30 * 60 * 1000;
 
 // Local testing only. This flag must not be enabled in production.
 const ALLOW_NON_COMPANY_EMAILS =
-  process.env.NODE_ENV !== 'production' &&
   process.env.ALLOW_NON_COMPANY_EMAILS === 'true';
 
 function normalizeEmail(email) {
